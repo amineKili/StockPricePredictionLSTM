@@ -14,8 +14,8 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-public class RecurrentNets {	
-	private static final int lstmLayer1Size = 128;
+public class RecurrentNets {
+    private static final int lstmLayer1Size = 128;
     private static final int lstmLayer2Size = 128;
     private static final int denseLayerSize = 32;
     private static final double dropoutRatio = 0.5;
@@ -52,20 +52,20 @@ public class RecurrentNets {
                         .dropOut(dropoutRatio)
                         .build())
                 .layer(3, new DenseLayer.Builder()
-                		.nIn(lstmLayer2Size)
-                		.nOut(denseLayerSize)
-                		.activation(Activation.RELU)
-                		.build())
+                        .nIn(lstmLayer2Size)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
                 .layer(4, new DenseLayer.Builder()
-                		.nIn(denseLayerSize)
-                		.nOut(denseLayerSize)
-                		.activation(Activation.RELU)
-                		.build())
+                        .nIn(denseLayerSize)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
                 .layer(5, new DenseLayer.Builder()
-                		.nIn(denseLayerSize)
-                		.nOut(denseLayerSize)
-                		.activation(Activation.RELU)
-                		.build())
+                        .nIn(denseLayerSize)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
                 .layer(6, new RnnOutputLayer.Builder()
                         .nIn(denseLayerSize)
                         .nOut(nOut)
