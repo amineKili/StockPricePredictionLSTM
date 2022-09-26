@@ -9,7 +9,6 @@ import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelSerializer;
@@ -22,18 +21,27 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public class StockPricePrediction {
-    private static int exampleLength = 22; // time series length, assume 22 working days per month
+    private static int exampleLength = 1000; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
-        String file = "data/prices-split-adjusted.csv";
+        // TODO: user specify input file and Symbol
+        String file = "/Users/amine/Downloads/B010335_07_Codes/StockPricePrediction/data/AUD.csv";
+
         String symbol = "GRMN"; // stock name
+
         int batchSize = 128; // mini-batch size
+
+        // TODO: remove test Ratio, no Split is needed, Test data is already splitted
         double splitRatio = 0.8; // 80% for training, 20% for testing
+
         int epochs = 100; // training epochs
 
         System.out.println("Creating dataSet iterator...");
-        PriceCategory category = PriceCategory.OPEN; // CLOSE: predict close price
+
+        // TODO: change to ALL for LSTM to generate All fields
+        PriceCategory category = PriceCategory.ALL; // CLOSE: predict close price
+
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         System.out.println("Loading test dataset...");
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
@@ -41,15 +49,9 @@ public class StockPricePrediction {
         System.out.println("Building LSTM networks...");
         MultiLayerNetwork net = RecurrentNets.createAndBuildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
-        //Initialize the user interface backend
-        UIServer uiServer = UIServer.getInstance();
-
         //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
         //Then add the StatsListener to collect this information from the network, as it trains
-        StatsStorage statsStorage = new InMemoryStatsStorage();             //Alternative: new FileStatsStorage(File) - see UIStorageExample
-
-        //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
-        uiServer.attach(statsStorage);
+        StatsStorage statsStorage = new InMemoryStatsStorage(); //Alternative: new FileStatsStorage(File) - see UIStorageExample
 
         int listenerFrequency = 1;
         net.setListeners(new StatsListener(statsStorage, listenerFrequency));
@@ -150,7 +152,8 @@ public class StockPricePrediction {
         RegressionEvaluation eval = net.evaluateRegression(iterator);
         System.out.println(eval.stats());
 
-        for (int n = 0; n < 5; n++) {
+
+        for (int n = 0; n < StockDataSetIterator.VECTOR_SIZE; n++) {
             double[] pred = new double[predicts.length];
             double[] actu = new double[actuals.length];
             for (int i = 0; i < predicts.length; i++) {
@@ -160,7 +163,7 @@ public class StockPricePrediction {
             String name;
             switch (n) {
                 case 0:
-                    name = "Stock OPEN Price";
+                    name = "Stock OPEN";
                     break;
                 case 1:
                     name = "Stock CLOSE Price";
@@ -173,6 +176,31 @@ public class StockPricePrediction {
                     break;
                 case 4:
                     name = "Stock VOLUME Amount";
+                    break;
+                case 5:
+                    name = "Stock WAP";
+                    break;
+                case 6:
+                    name = "Stock Count";
+                    break;
+                // Use minute to verify if model predict next minutes, if not the model need to be adjusted
+                case 7:
+                    name = "Stock Minutes";
+                    break;
+                case 8:
+                    name = "Stock Tesla 3";
+                    break;
+                case 9:
+                    name = "Stock Tesla 6";
+                    break;
+                case 10:
+                    name = "Stock Tesla 9";
+                    break;
+                case 11:
+                    name = "Stock Decision";
+                    break;
+                case 12:
+                    name = "Stock Exeucte";
                     break;
                 default:
                     throw new NoSuchElementException();

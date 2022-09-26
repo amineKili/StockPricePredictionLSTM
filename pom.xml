@@ -18,7 +18,6 @@
         <dl4j.version>1.0.0-alpha</dl4j.version>
         <datavec.version>1.0.0-alpha</datavec.version>
         <arbiter.version>1.0.0-alpha</arbiter.version>
-        <logback.version>1.2.3</logback.version>
         <dl4j.spark.version>1.0.0-alpha_spark_2</dl4j.spark.version>
     </properties>
 
@@ -85,11 +84,6 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.3.5</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
