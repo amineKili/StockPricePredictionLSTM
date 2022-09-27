@@ -3,8 +3,6 @@ package com.packt.JavaDL.PricePrediction.Utils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
@@ -37,17 +35,6 @@ public class PlotUtil {
         );
 
         XYPlot xyPlot = chart.getXYPlot();
-
-        // X-axis
-        final NumberAxis domainAxis = (NumberAxis) xyPlot.getDomainAxis();
-        domainAxis.setRange((int) index[0], (int) (index[index.length - 1] + 2));
-        domainAxis.setTickUnit(new NumberTickUnit(20));
-        domainAxis.setVerticalTickLabels(true);
-
-        // Y-axis
-        final NumberAxis rangeAxis = (NumberAxis) xyPlot.getRangeAxis();
-        rangeAxis.setRange(min, max);
-        rangeAxis.setTickUnit(new NumberTickUnit(50));
 
         final ChartPanel panel = new ChartPanel(chart);
         final JFrame f = new JFrame();
