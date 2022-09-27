@@ -21,8 +21,8 @@ public class StockDataSetIterator implements DataSetIterator {
      */
     private final Map<PriceCategory, Integer> featureMapIndex = new HashMap<>();
 
-    // New features size is length of [Open,High,Low,Close,Volume,WAP,Count,Minute,Tesla3,Tesla6,Tesla9,Decision,EXECUTE] = 13 feature
-    public static final int VECTOR_SIZE = 13; // number of features for a stock data
+    // New features size is length of [Open,High,Low,Close,Volume,WAP,Count,Minute,Tesla3,Tesla6,Tesla9,BUY, SELL, NO_Decision, EXECUTE, No_Execute] = 15 feature
+    public static final int VECTOR_SIZE = 15; // number of features for a stock data
 
     private final int miniBatchSize; // mini-batch size
     private int exampleLength = 22; // default 22, say, 22 working days per month
@@ -72,8 +72,11 @@ public class StockDataSetIterator implements DataSetIterator {
         this.featureMapIndex.put(PriceCategory.TESLA3, 8);
         this.featureMapIndex.put(PriceCategory.TESLA6, 9);
         this.featureMapIndex.put(PriceCategory.TESLA9, 10);
-        this.featureMapIndex.put(PriceCategory.DECISION, 11);
-        this.featureMapIndex.put(PriceCategory.EXECUTE, 12);
+        this.featureMapIndex.put(PriceCategory.BUY, 11);
+        this.featureMapIndex.put(PriceCategory.SELL, 12);
+        this.featureMapIndex.put(PriceCategory.NO_DECISION, 13);
+        this.featureMapIndex.put(PriceCategory.EXECUTE, 14);
+        this.featureMapIndex.put(PriceCategory.NO_EXECUTE, 15);
 
         List<StockData> stockDataList = readStockDataFromFile(filename, symbol);
         this.miniBatchSize = miniBatchSize;
@@ -147,9 +150,16 @@ public class StockDataSetIterator implements DataSetIterator {
                 input.putScalar(new int[]{index, 7, c}, (curData.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]));
                 input.putScalar(new int[]{index, 8, c}, (curData.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
                 input.putScalar(new int[]{index, 9, c}, (curData.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
-                input.putScalar(new int[]{index, 9, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
-                input.putScalar(new int[]{index, 10, c}, (curData.getDecision() - minArray[11]) / (maxArray[11] - minArray[11]));
-                input.putScalar(new int[]{index, 11, c}, (curData.getExecute() - minArray[12]) / (maxArray[12] - minArray[12]));
+                input.putScalar(new int[]{index, 10, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
+
+                // Features based on Decision column
+                input.putScalar(new int[]{index, 11, c}, (decisionToFeature(PriceCategory.BUY, curData) - minArray[11]) / (maxArray[11] - minArray[11]));
+                input.putScalar(new int[]{index, 12, c}, (decisionToFeature(PriceCategory.SELL, curData) - minArray[12]) / (maxArray[12] - minArray[12]));
+                input.putScalar(new int[]{index, 13, c}, (decisionToFeature(PriceCategory.NO_DECISION, curData) - minArray[13]) / (maxArray[13] - minArray[13]));
+
+                // Features based on Execute Column
+                input.putScalar(new int[]{index, 14, c}, (executeToFeature(PriceCategory.EXECUTE, curData) - minArray[14]) / (maxArray[14] - minArray[14]));
+                input.putScalar(new int[]{index, 15, c}, (executeToFeature(PriceCategory.NO_EXECUTE, curData) - minArray[15]) / (maxArray[15] - minArray[15]));
                 nextData = train.get(i + 1);
                 if (category.equals(PriceCategory.ALL)) {
                     label.putScalar(new int[]{index, 0, c}, (nextData.getOpen() - minArray[1]) / (maxArray[1] - minArray[1]));
@@ -162,9 +172,16 @@ public class StockDataSetIterator implements DataSetIterator {
                     input.putScalar(new int[]{index, 7, c}, (curData.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]));
                     input.putScalar(new int[]{index, 8, c}, (curData.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
                     input.putScalar(new int[]{index, 9, c}, (curData.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
-                    input.putScalar(new int[]{index, 9, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
-                    input.putScalar(new int[]{index, 10, c}, (curData.getDecision() - minArray[11]) / (maxArray[11] - minArray[11]));
-                    input.putScalar(new int[]{index, 11, c}, (curData.getExecute() - minArray[12]) / (maxArray[12] - minArray[12]));
+                    input.putScalar(new int[]{index, 10, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
+
+                    // Features based on Decision column
+                    input.putScalar(new int[]{index, 11, c}, (decisionToFeature(PriceCategory.BUY, curData) - minArray[11]) / (maxArray[11] - minArray[11]));
+                    input.putScalar(new int[]{index, 12, c}, (decisionToFeature(PriceCategory.SELL, curData) - minArray[12]) / (maxArray[12] - minArray[12]));
+                    input.putScalar(new int[]{index, 13, c}, (decisionToFeature(PriceCategory.NO_DECISION, curData) - minArray[13]) / (maxArray[13] - minArray[13]));
+
+                    // Features based on Execute Column
+                    input.putScalar(new int[]{index, 14, c}, (executeToFeature(PriceCategory.EXECUTE, curData) - minArray[14]) / (maxArray[14] - minArray[14]));
+                    input.putScalar(new int[]{index, 15, c}, (executeToFeature(PriceCategory.NO_EXECUTE, curData) - minArray[15]) / (maxArray[15] - minArray[15]));
                 } else {
                     label.putScalar(new int[]{index, 0, c}, feedLabel(nextData));
                 }
@@ -202,6 +219,7 @@ public class StockDataSetIterator implements DataSetIterator {
             case MINUTE:
                 value = (data.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]);
                 break;
+
             case TESLA3:
                 value = (data.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]);
                 break;
@@ -211,12 +229,27 @@ public class StockDataSetIterator implements DataSetIterator {
             case TESLA9:
                 value = (data.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]);
                 break;
-            case DECISION:
-                value = (data.getDecision() - minArray[11]) / (maxArray[11] - minArray[11]);
+
+            // Added Features based on decision Column
+            case BUY:
+                value = (decisionToFeature(category, data) - minArray[11]) / (maxArray[12] - minArray[12]);
                 break;
+            case SELL:
+                value = (decisionToFeature(category, data) - minArray[12]) / (maxArray[12] - minArray[12]);
+                break;
+            case NO_DECISION:
+                value = (decisionToFeature(category, data) - minArray[13]) / (maxArray[13] - minArray[13]);
+                break;
+
+            // Added Features based on execute Column
             case EXECUTE:
-                value = (data.getExecute() - minArray[12]) / (maxArray[12] - minArray[12]);
+                value = (executeToFeature(category, data) - minArray[14]) / (maxArray[14] - minArray[14]);
                 break;
+            case NO_EXECUTE:
+                value = (executeToFeature(category, data) - minArray[15]) / (maxArray[15] - minArray[15]);
+                break;
+
+            // TODO: add category to index to avoir errors missing an index
             default:
                 throw new NoSuchElementException();
         }
@@ -233,7 +266,6 @@ public class StockDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalOutcomes() {
-        // TODO : adjust outcomes to count of Item x PredictLength
         if (this.category.equals(PriceCategory.ALL)) return predictLength * VECTOR_SIZE;
         else return predictLength;
     }
@@ -289,7 +321,8 @@ public class StockDataSetIterator implements DataSetIterator {
             INDArray input = Nd4j.create(new int[]{exampleLength, VECTOR_SIZE}, 'f');
             for (int j = i; j < i + exampleLength; j++) {
                 StockData stock = stockDataList.get(j);
-                // TODO : add more fields from new file
+                // TODO: add column, execute, no execute, buy, sell, hold
+
                 input.putScalar(new int[]{j - i, 0}, (stock.getOpen() - minArray[0]) / (maxArray[0] - minArray[0]));
                 input.putScalar(new int[]{j - i, 1}, (stock.getClose() - minArray[1]) / (maxArray[1] - minArray[1]));
                 input.putScalar(new int[]{j - i, 2}, (stock.getLow() - minArray[2]) / (maxArray[2] - minArray[2]));
@@ -301,11 +334,15 @@ public class StockDataSetIterator implements DataSetIterator {
                 input.putScalar(new int[]{j - i, 8}, (stock.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
                 input.putScalar(new int[]{j - i, 9}, (stock.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
                 input.putScalar(new int[]{j - i, 10}, (stock.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
-                input.putScalar(new int[]{j - i, 11}, (stock.getDecision() - minArray[11]) / (maxArray[11] - minArray[11]));
-                input.putScalar(new int[]{j - i, 12}, (stock.getExecute() - minArray[12]) / (maxArray[12] - minArray[12]));
+                input.putScalar(new int[]{j - i, 11}, (decisionToFeature(PriceCategory.BUY, stock) - minArray[11]) / (maxArray[11] - minArray[11]));
+                input.putScalar(new int[]{j - i, 12}, (decisionToFeature(PriceCategory.SELL, stock) - minArray[12]) / (maxArray[12] - minArray[12]));
+                input.putScalar(new int[]{j - i, 13}, (decisionToFeature(PriceCategory.NO_DECISION, stock) - minArray[13]) / (maxArray[13] - minArray[13]));
+                input.putScalar(new int[]{j - i, 14}, (executeToFeature(PriceCategory.EXECUTE, stock) - minArray[14]) / (maxArray[14] - minArray[14]));
+                input.putScalar(new int[]{j - i, 15}, (executeToFeature(PriceCategory.NO_EXECUTE, stock) - minArray[15]) / (maxArray[15] - minArray[15]));
             }
             StockData stock = stockDataList.get(i + exampleLength);
             INDArray label;
+            // TODO: add column, execute, no execute, buy, sell, hold
             if (category.equals(PriceCategory.ALL)) {
                 label = Nd4j.create(new int[]{VECTOR_SIZE}, 'f'); // ordering is set as 'f', faster construct
                 label.putScalar(new int[]{0}, stock.getOpen());
@@ -319,10 +356,15 @@ public class StockDataSetIterator implements DataSetIterator {
                 label.putScalar(new int[]{8}, stock.getTesla3());
                 label.putScalar(new int[]{9}, stock.getTesla6());
                 label.putScalar(new int[]{10}, stock.getTesla9());
-                label.putScalar(new int[]{11}, stock.getDecision());
-                label.putScalar(new int[]{12}, stock.getExecute());
+                label.putScalar(new int[]{11}, decisionToFeature(PriceCategory.BUY, stock));
+                label.putScalar(new int[]{12}, decisionToFeature(PriceCategory.SELL, stock));
+                label.putScalar(new int[]{13}, decisionToFeature(PriceCategory.NO_DECISION, stock));
+                label.putScalar(new int[]{14}, executeToFeature(PriceCategory.EXECUTE, stock));
+                label.putScalar(new int[]{15}, executeToFeature(PriceCategory.NO_EXECUTE, stock));
+
             } else {
                 label = Nd4j.create(new int[]{1}, 'f');
+                // TODO: add column, execute, no execute, buy, sell, hold
                 switch (category) {
                     case OPEN:
                         label.putScalar(new int[]{0}, stock.getOpen());
@@ -357,11 +399,14 @@ public class StockDataSetIterator implements DataSetIterator {
                     case TESLA9:
                         label.putScalar(new int[]{0}, stock.getTesla9());
                         break;
-                    case DECISION:
-                        label.putScalar(new int[]{0}, stock.getDecision());
+                    case BUY:
+                    case NO_DECISION:
+                    case SELL:
+                        label.putScalar(new int[]{0}, decisionToFeature(category, stock));
                         break;
                     case EXECUTE:
-                        label.putScalar(new int[]{0}, stock.getExecute());
+                    case NO_EXECUTE:
+                        label.putScalar(new int[]{0}, executeToFeature(category, stock));
                         break;
                     default:
                         throw new NoSuchElementException();
@@ -380,6 +425,7 @@ public class StockDataSetIterator implements DataSetIterator {
      * @return List<StockData> parsed content
      */
 
+    // TODO: change features, add column execute, not execute, buy, sell, hold, no decision
     @SuppressWarnings("resource")
     private List<StockData> readStockDataFromFile(String filename, String symbol) {
         List<StockData> stockDataList = new ArrayList<>();
@@ -414,6 +460,7 @@ public class StockDataSetIterator implements DataSetIterator {
                     continue;
                 }
                 double[] nums = new double[VECTOR_SIZE];
+                // TODO: adjust to new features, add column execute, not execute, buy, sell, hold, no decision
                 for (int i = 0; i < arr.length - 2; i++) {
                     var value = arr[i + 2].trim();
                     if (value.isEmpty() || value.isBlank() ||
@@ -444,11 +491,11 @@ public class StockDataSetIterator implements DataSetIterator {
                     if (nums[i] < minArray[i]) minArray[i] = nums[i];
                 }
                 stockDataList.add(new StockData(
-                                arr[0], arr[1],
-                                nums[0], nums[1], nums[2], nums[3], nums[4],
-                                nums[5], nums[6], nums[7],
-                                nums[8], nums[9], nums[10],
-                                nums[11], nums[12]
+                                arr[0], arr[1], // Currency, Date
+                                nums[0], nums[1], nums[2], nums[3], nums[4], // Open, High, Low, Close, Volume
+                                nums[5], nums[6], nums[7], // WAP, Count, Minute
+                                nums[8], nums[9], nums[10], // Tesla3, Tesla6, Tesla9
+                                nums[11], nums[12] // Decision, Execute
                         )
                 );
             }
@@ -458,4 +505,20 @@ public class StockDataSetIterator implements DataSetIterator {
         System.out.println(MessageFormat.format("Finish Reading CSV, Stock Dataset Size {0}", stockDataList.size()));
         return stockDataList;
     }
+
+    public static int decisionToFeature(PriceCategory priceCategory, StockData stock) {
+        if (priceCategory == PriceCategory.BUY && stock.getDecision() == 1) return 1;
+        if (priceCategory == PriceCategory.SELL && stock.getDecision() == -1) return 1;
+        if (priceCategory == PriceCategory.NO_DECISION && stock.getDecision() == 0) return 1;
+        return 0;
+    }
+
+
+    public static int executeToFeature(PriceCategory priceCategory, StockData stock) {
+        if (priceCategory == PriceCategory.EXECUTE && stock.getExecute() == 1) return 1;
+        if (priceCategory == PriceCategory.NO_EXECUTE && stock.getExecute() == 0) return 1;
+        return 0;
+    }
 }
+
+

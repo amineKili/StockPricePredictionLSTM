@@ -1,10 +1,10 @@
 package com.packt.javadl.priceprediction;
 
+import com.packt.javadl.priceprediction.neuralnetwork.RecurrentNets;
 import com.packt.javadl.priceprediction.representation.PriceCategory;
 import com.packt.javadl.priceprediction.representation.StockDataSetIterator;
 import com.packt.javadl.priceprediction.utils.Pair;
 import com.packt.javadl.priceprediction.utils.PlotUtil;
-import com.packt.javadl.priceprediction.neuralnetwork.RecurrentNets;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -35,19 +35,21 @@ public class StockPricePrediction {
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
-        int epochs = 10; // training epochs, TODO : Increase to 100 in production
+        // TODO : Increase to 100 in production
+        int epochs = 10; // training epochs
 
         System.out.println("Creating dataSet iterator...");
 
-        // TODO: change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.ALL;
+        //Change to ALL for LSTM to generate All fields or Use a specific Field
+        PriceCategory category = PriceCategory.CLOSE;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         System.out.println("Loading test dataset...");
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
 
+        //TODO : change from fullLstmNetwork to lightLstmNetwork for dev
         System.out.println("Building LSTM networks...");
-        MultiLayerNetwork net = RecurrentNets.lightLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
+        MultiLayerNetwork net = RecurrentNets.fullLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
 
         //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
         //Then add the StatsListener to collect this information from the network, as it trains
@@ -149,13 +151,6 @@ public class StockPricePrediction {
             predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1).mul(max.sub(min)).add(min);
             actuals[i] = testData.get(i).getValue();
         }
-
-
-//        System.out.println("Printing predicted and actual values...");
-//        System.out.println("Predict, Actual");
-//        for (int i = 0; i < predicts.length; i++)
-//            System.out.println(predicts[i] + "\t" + actuals[i]);
-//        System.out.println("Plottig...");
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
         System.out.println(eval.stats());
