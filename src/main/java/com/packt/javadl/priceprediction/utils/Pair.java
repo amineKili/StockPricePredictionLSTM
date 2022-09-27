@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction.Utils;
+package com.packt.javadl.priceprediction.utils;
 
 public class Pair<T, U> {
     private final T key;

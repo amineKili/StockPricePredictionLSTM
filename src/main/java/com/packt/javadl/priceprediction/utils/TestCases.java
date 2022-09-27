@@ -1,6 +1,6 @@
-package com.packt.JavaDL.PricePrediction.Utils;
+package com.packt.javadl.priceprediction.utils;
 
-import com.packt.JavaDL.PricePrediction.Representation.TestCase;
+import com.packt.javadl.priceprediction.representation.TestCase;
 
 import java.util.ArrayList;
 import java.util.HashMap;

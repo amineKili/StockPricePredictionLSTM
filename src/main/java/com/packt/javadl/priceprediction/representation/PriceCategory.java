@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction.Representation;
+package com.packt.javadl.priceprediction.representation;
 
 /**
  * Created by zhanghao on 28/9/17.

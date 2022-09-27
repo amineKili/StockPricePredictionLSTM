@@ -1,8 +1,8 @@
-package com.packt.JavaDL.PricePrediction.Representation;
+package com.packt.javadl.priceprediction.representation;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
-import com.packt.JavaDL.PricePrediction.Utils.Pair;
+import com.packt.javadl.priceprediction.utils.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;

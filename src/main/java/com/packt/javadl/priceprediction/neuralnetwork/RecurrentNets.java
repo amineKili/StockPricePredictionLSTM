@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction.neuralnetwork;
+package com.packt.javadl.priceprediction.neuralnetwork;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;

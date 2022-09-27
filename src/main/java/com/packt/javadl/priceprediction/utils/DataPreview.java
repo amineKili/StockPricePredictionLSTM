@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction.Utils;
+package com.packt.javadl.priceprediction.utils;
 
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;

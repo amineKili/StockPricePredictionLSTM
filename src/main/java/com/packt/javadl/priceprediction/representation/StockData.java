@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction.Representation;
+package com.packt.javadl.priceprediction.representation;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

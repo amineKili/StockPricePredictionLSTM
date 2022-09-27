@@ -1,10 +1,10 @@
-package com.packt.JavaDL.PricePrediction;
+package com.packt.javadl.priceprediction;
 
-import com.packt.JavaDL.PricePrediction.Representation.PriceCategory;
-import com.packt.JavaDL.PricePrediction.Representation.StockDataSetIterator;
-import com.packt.JavaDL.PricePrediction.Utils.Pair;
-import com.packt.JavaDL.PricePrediction.Utils.PlotUtil;
-import com.packt.JavaDL.PricePrediction.neuralnetwork.RecurrentNets;
+import com.packt.javadl.priceprediction.representation.PriceCategory;
+import com.packt.javadl.priceprediction.representation.StockDataSetIterator;
+import com.packt.javadl.priceprediction.utils.Pair;
+import com.packt.javadl.priceprediction.utils.PlotUtil;
+import com.packt.javadl.priceprediction.neuralnetwork.RecurrentNets;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
