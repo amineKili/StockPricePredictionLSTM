@@ -4,6 +4,7 @@ import com.packt.JavaDL.PricePrediction.Representation.PriceCategory;
 import com.packt.JavaDL.PricePrediction.Representation.StockDataSetIterator;
 import com.packt.JavaDL.PricePrediction.Utils.Pair;
 import com.packt.JavaDL.PricePrediction.Utils.PlotUtil;
+import com.packt.JavaDL.PricePrediction.neuralnetwork.RecurrentNets;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -21,33 +22,32 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public class StockPricePrediction {
-    private static int exampleLength = 1000; // time series length, assume 22 working days per month
+    private static int exampleLength = 30; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
-        // TODO: user specify input file and Symbol
+
         String file = "/Users/amine/Downloads/B010335_07_Codes/StockPricePrediction/data/AUD.csv";
 
         String symbol = "GRMN"; // stock name
 
         int batchSize = 128; // mini-batch size
 
-        // TODO: remove test Ratio, no Split is needed, Test data is already splitted
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
-        int epochs = 100; // training epochs
+        int epochs = 10; // training epochs, TODO : Increase to 100 in production
 
         System.out.println("Creating dataSet iterator...");
 
-        // TODO: change to ALL for LSTM to generate All fields
-        PriceCategory category = PriceCategory.ALL; // CLOSE: predict close price
+        // TODO: change to ALL for LSTM to generate All fields or Use a specific Field
+        PriceCategory category = PriceCategory.ALL;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         System.out.println("Loading test dataset...");
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
 
         System.out.println("Building LSTM networks...");
-        MultiLayerNetwork net = RecurrentNets.createAndBuildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
+        MultiLayerNetwork net = RecurrentNets.lightLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
 
         //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
         //Then add the StatsListener to collect this information from the network, as it trains
@@ -56,8 +56,12 @@ public class StockPricePrediction {
         int listenerFrequency = 1;
         net.setListeners(new StatsListener(statsStorage, listenerFrequency));
 
+        //Print Training Score
+        net.addListeners(new ScoreIterationListener(1));
+
         System.out.println("Training LSTM network...");
         for (int i = 0; i < epochs; i++) {
+            System.out.println("Epoch " + i);
             while (iterator.hasNext()) net.fit(iterator.next()); // fit model using mini-batch data
             iterator.reset(); // reset iterator
             net.rnnClearPreviousState(); // clear previous state
@@ -125,8 +129,11 @@ public class StockPricePrediction {
         System.out.println("Printing predicted and actual values...");
         System.out.println("Predict, Actual");
 
-        for (int i = 0; i < predicts.length; i++)
-            System.out.println(predicts[i] + "," + actuals[i]);
+        /*
+         * TODO: Uncomment this section if needs to read Actual/Predicted Values
+         *  for (int i = 0; i < predicts.length; i++)
+         *  System.out.println(predicts[i] + "," + actuals[i]);
+         */
 
         System.out.println("Plottig...");
         PlotUtil.plot(predicts, actuals, String.valueOf(category));
@@ -143,15 +150,15 @@ public class StockPricePrediction {
             actuals[i] = testData.get(i).getValue();
         }
 
-        System.out.println("Printing predicted and actual values...");
-        System.out.println("Predict, Actual");
-        for (int i = 0; i < predicts.length; i++)
-            System.out.println(predicts[i] + "\t" + actuals[i]);
-        System.out.println("Plottig...");
+
+//        System.out.println("Printing predicted and actual values...");
+//        System.out.println("Predict, Actual");
+//        for (int i = 0; i < predicts.length; i++)
+//            System.out.println(predicts[i] + "\t" + actuals[i]);
+//        System.out.println("Plottig...");
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
         System.out.println(eval.stats());
-
 
         for (int n = 0; n < StockDataSetIterator.VECTOR_SIZE; n++) {
             double[] pred = new double[predicts.length];

@@ -16,8 +16,6 @@ public class PlotUtil {
         for (int i = 0; i < predicts.length; i++)
             index[i] = i;
 
-        int min = minValue(predicts, actuals);
-        int max = maxValue(predicts, actuals);
 
         final XYSeriesCollection dataSet = new XYSeriesCollection();
         addSeries(dataSet, index, predicts, "Predicted");

@@ -1,4 +1,4 @@
-package com.packt.JavaDL.PricePrediction;
+package com.packt.JavaDL.PricePrediction.neuralnetwork;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -21,7 +21,7 @@ public class RecurrentNets {
     private static final double dropoutRatio = 0.5;
     private static final int truncatedBPTTLength = 22;
 
-    public static MultiLayerNetwork createAndBuildLstmNetworks(int nIn, int nOut) {
+    public static MultiLayerNetwork fullLstmNetwork(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123456)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -82,6 +82,62 @@ public class RecurrentNets {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new ScoreIterationListener(100));
+        return net;
+    }
+
+
+    private static final int lightLstmLayer1Size = 32;
+    private static final int lightLstmLayer2Size = 32;
+
+    public static MultiLayerNetwork lightLstmNetwork(int nIn, int nOut) {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123456)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Adam(0.001))
+                .l2(1e-4)
+                .weightInit(WeightInit.XAVIER)
+                .activation(Activation.RELU)
+                .list()
+                .layer(0, new LSTM.Builder()
+                        .nIn(nIn)
+                        .nOut(lightLstmLayer1Size)
+                        .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
+                        .dropOut(dropoutRatio)
+                        .build())
+                .layer(1, new LSTM.Builder()
+                        .nIn(lightLstmLayer1Size)
+                        .nOut(lightLstmLayer2Size)
+                        .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
+                        .dropOut(dropoutRatio)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nIn(lightLstmLayer2Size)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(3, new DenseLayer.Builder()
+                        .nIn(denseLayerSize)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(4, new RnnOutputLayer.Builder()
+                        .nIn(denseLayerSize)
+                        .nOut(nOut)
+                        .activation(Activation.IDENTITY)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build())
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTForwardLength(truncatedBPTTLength)
+                .tBPTTBackwardLength(truncatedBPTTLength)
+                .pretrain(false)
+                .backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setListeners(new ScoreIterationListener(1));
         return net;
     }
 }

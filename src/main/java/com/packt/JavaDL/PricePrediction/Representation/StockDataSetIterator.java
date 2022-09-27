@@ -1,6 +1,5 @@
 package com.packt.JavaDL.PricePrediction.Representation;
 
-import com.google.common.collect.ImmutableMap;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import com.packt.JavaDL.PricePrediction.Utils.Pair;
@@ -20,11 +19,7 @@ public class StockDataSetIterator implements DataSetIterator {
     /**
      * category and its index
      */
-    // TODO : add more categories
-    private final Map<PriceCategory, Integer> featureMapIndex = ImmutableMap.of(
-            PriceCategory.OPEN, 0, PriceCategory.CLOSE, 1,
-            PriceCategory.LOW, 2, PriceCategory.HIGH, 3, PriceCategory.VOLUME, 4
-    );
+    private final Map<PriceCategory, Integer> featureMapIndex = new HashMap<>();
 
     // New features size is length of [Open,High,Low,Close,Volume,WAP,Count,Minute,Tesla3,Tesla6,Tesla9,Decision,EXECUTE] = 13 feature
     public static final int VECTOR_SIZE = 13; // number of features for a stock data
@@ -65,6 +60,21 @@ public class StockDataSetIterator implements DataSetIterator {
     private final List<Pair<INDArray, INDArray>> test;
 
     public StockDataSetIterator(String filename, String symbol, int miniBatchSize, int exampleLength, double splitRatio, PriceCategory category) {
+
+        this.featureMapIndex.put(PriceCategory.OPEN, 0);
+        this.featureMapIndex.put(PriceCategory.CLOSE, 1);
+        this.featureMapIndex.put(PriceCategory.LOW, 2);
+        this.featureMapIndex.put(PriceCategory.HIGH, 3);
+        this.featureMapIndex.put(PriceCategory.VOLUME, 4);
+        this.featureMapIndex.put(PriceCategory.WAP, 5);
+        this.featureMapIndex.put(PriceCategory.COUNT, 6);
+        this.featureMapIndex.put(PriceCategory.MINUTE, 7);
+        this.featureMapIndex.put(PriceCategory.TESLA3, 8);
+        this.featureMapIndex.put(PriceCategory.TESLA6, 9);
+        this.featureMapIndex.put(PriceCategory.TESLA9, 10);
+        this.featureMapIndex.put(PriceCategory.DECISION, 11);
+        this.featureMapIndex.put(PriceCategory.EXECUTE, 12);
+
         List<StockData> stockDataList = readStockDataFromFile(filename, symbol);
         this.miniBatchSize = miniBatchSize;
         this.exampleLength = exampleLength;
