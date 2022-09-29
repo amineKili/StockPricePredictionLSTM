@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public class StockPricePrediction {
-    private static int exampleLength = 30; // time series length, assume 22 working days per month
+    private static final int exampleLength = 22; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
 
         String file = "/Users/amine/Downloads/B010335_07_Codes/StockPricePrediction/data/AUD.csv";
 
-        String symbol = "GRMN"; // stock name
+        String symbol = "AUD"; // stock name
 
         int batchSize = 128; // mini-batch size
 
@@ -41,7 +41,7 @@ public class StockPricePrediction {
         System.out.println("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.CLOSE;
+        PriceCategory category = PriceCategory.ALL;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         System.out.println("Loading test dataset...");
@@ -49,7 +49,7 @@ public class StockPricePrediction {
 
         //TODO : change from fullLstmNetwork to lightLstmNetwork for dev
         System.out.println("Building LSTM networks...");
-        MultiLayerNetwork net = RecurrentNets.fullLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
+        MultiLayerNetwork net = RecurrentNets.lightLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
 
         //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
         //Then add the StatsListener to collect this information from the network, as it trains
@@ -131,11 +131,9 @@ public class StockPricePrediction {
         System.out.println("Printing predicted and actual values...");
         System.out.println("Predict, Actual");
 
-        /*
-         * TODO: Uncomment this section if needs to read Actual/Predicted Values
-         *  for (int i = 0; i < predicts.length; i++)
-         *  System.out.println(predicts[i] + "," + actuals[i]);
-         */
+        // TODO: Uncomment this section if needs to read Actual/Predicted Values
+        for (int i = 0; i < predicts.length; i++)
+            System.out.println(predicts[i] + "," + actuals[i]);
 
         System.out.println("Plottig...");
         PlotUtil.plot(predicts, actuals, String.valueOf(category));
@@ -168,13 +166,13 @@ public class StockPricePrediction {
                     name = "Stock OPEN";
                     break;
                 case 1:
-                    name = "Stock CLOSE Price";
+                    name = "Stock High Price";
                     break;
                 case 2:
                     name = "Stock LOW Price";
                     break;
                 case 3:
-                    name = "Stock HIGH Price";
+                    name = "Stock Close Price";
                     break;
                 case 4:
                     name = "Stock VOLUME Amount";
@@ -199,11 +197,21 @@ public class StockPricePrediction {
                     name = "Stock Tesla 9";
                     break;
                 case 11:
-                    name = "Stock Decision";
+                    name = "Stock BUY Decision";
                     break;
                 case 12:
-                    name = "Stock Exeucte";
+                    name = "Stock SELL Decision";
                     break;
+                case 13:
+                    name = "Stock NO Decision";
+                    break;
+                case 14:
+                    name = "Stock Execute";
+                    break;
+                case 15:
+                    name = "Stock NO Execute";
+                    break;
+
                 default:
                     throw new NoSuchElementException();
             }

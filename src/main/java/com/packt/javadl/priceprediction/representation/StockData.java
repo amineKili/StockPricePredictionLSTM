@@ -11,9 +11,9 @@ public class StockData {
     private String symbol;
 
     private double open;
-    private double close;
-    private double low;
     private double high;
+    private double low;
+    private double close;
     private double volume;
 
     private double wap;
@@ -24,7 +24,9 @@ public class StockData {
     private double tesla6;
     private double tesla9;
 
-    private double decision; // 0: NO, 1: BUY, -1: SELL
-    private double execute; // 0: NO, 1: EXECUTE
+    private double buy;
+    private double sell;
+
+    private double execute;
 
 }
