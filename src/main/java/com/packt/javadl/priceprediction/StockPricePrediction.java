@@ -18,11 +18,14 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 public class StockPricePrediction {
-    private static final int exampleLength = 22; // time series length, assume 22 working days per month
+    private static final int exampleLength = 300; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
@@ -31,25 +34,25 @@ public class StockPricePrediction {
 
         String symbol = "AUD"; // stock name
 
-        int batchSize = 128; // mini-batch size
+        int batchSize = 1096; // mini-batch size
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 10; // training epochs
+        int epochs = 100; // training epochs
 
-        System.out.println("Creating dataSet iterator...");
+        print("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
         PriceCategory category = PriceCategory.ALL;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
-        System.out.println("Loading test dataset...");
+        print("Loading test dataset...");
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
 
         //TODO : change from fullLstmNetwork to lightLstmNetwork for dev
-        System.out.println("Building LSTM networks...");
-        MultiLayerNetwork net = RecurrentNets.lightLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
+        print("Building LSTM networks...");
+        MultiLayerNetwork net = RecurrentNets.fullLstmNetwork(iterator.inputColumns(), iterator.totalOutcomes());
 
         //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
         //Then add the StatsListener to collect this information from the network, as it trains
@@ -61,9 +64,9 @@ public class StockPricePrediction {
         //Print Training Score
         net.addListeners(new ScoreIterationListener(1));
 
-        System.out.println("Training LSTM network...");
+        print("Training LSTM network...");
         for (int i = 0; i < epochs; i++) {
-            System.out.println("Epoch " + i);
+            print("Epoch " + i);
             while (iterator.hasNext()) net.fit(iterator.next()); // fit model using mini-batch data
             iterator.reset(); // reset iterator
             net.rnnClearPreviousState(); // clear previous state
@@ -74,17 +77,17 @@ public class StockPricePrediction {
         int totalNumParams_before_saving = 0;
         for (int i = 0; i < layers_before_saving.length; i++) {
             int nParams = layers_before_saving[i].numParams();
-            System.out.println("Number of parameters in layer " + i + ": " + nParams);
+            print("Number of parameters in layer " + i + ": " + nParams);
             totalNumParams_before_saving += nParams;
         }
-        System.out.println("Total number of network parameters: " + totalNumParams_before_saving);
+        print("Total number of network parameters: " + totalNumParams_before_saving);
 
-        System.out.println("Saving model...");
+        print("Saving model...");
         File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
         // saveUpdater: i.e., the state for Momentum, RMSProp, Adagrad etc. Save this to train your network more in the future
         ModelSerializer.writeModel(net, locationToSave, true);
 
-        System.out.println("Restoring model...");
+        print("Restoring model...");
         net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
 
         //print the score with every 1 iteration
@@ -95,12 +98,12 @@ public class StockPricePrediction {
         int totalNumParams = 0;
         for (int i = 0; i < layers.length; i++) {
             int nParams = layers[i].numParams();
-            System.out.println("Number of parameters in layer " + i + ": " + nParams);
+            print("Number of parameters in layer " + i + ": " + nParams);
             totalNumParams += nParams;
         }
-        System.out.println("Total number of network parameters: " + totalNumParams);
+        print("Total number of network parameters: " + totalNumParams);
 
-        System.out.println("Evaluating...");
+        print("Evaluating...");
         if (category.equals(PriceCategory.ALL)) {
             INDArray max = Nd4j.create(iterator.getMaxArray());
             INDArray min = Nd4j.create(iterator.getMinArray());
@@ -110,7 +113,7 @@ public class StockPricePrediction {
             double min = iterator.getMinNum(category);
             predictPriceOneAhead(net, test, max, min, category);
         }
-        System.out.println("Done...");
+        print("Done...");
     }
 
     /**
@@ -126,16 +129,16 @@ public class StockPricePrediction {
         }
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
-        System.out.println(eval.stats());
+        print(eval.stats());
 
-        System.out.println("Printing predicted and actual values...");
-        System.out.println("Predict, Actual");
+        print("Printing predicted and actual values...");
+        print("Predict, Actual");
 
         // TODO: Uncomment this section if needs to read Actual/Predicted Values
         for (int i = 0; i < predicts.length; i++)
-            System.out.println(predicts[i] + "," + actuals[i]);
+            print(predicts[i] + "," + actuals[i]);
 
-        System.out.println("Plottig...");
+        print("Plottig...");
         PlotUtil.plot(predicts, actuals, String.valueOf(category));
     }
 
@@ -151,7 +154,7 @@ public class StockPricePrediction {
         }
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
-        System.out.println(eval.stats());
+        print(eval.stats());
 
         for (int n = 0; n < StockDataSetIterator.VECTOR_SIZE; n++) {
             double[] pred = new double[predicts.length];
@@ -217,5 +220,14 @@ public class StockPricePrediction {
             }
             PlotUtil.plot(pred, actu, name);
         }
+    }
+
+
+    public static String getCurrentTimeForLogging() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+    }
+
+    public static void print(String message) {
+        System.out.println(MessageFormat.format("[{0}] {1}", getCurrentTimeForLogging(), message));
     }
 }

@@ -433,6 +433,10 @@ public class StockDataSetIterator implements DataSetIterator {
                 // initialize max and min arrays, for normalization
                 maxArray[i] = Double.MIN_VALUE;
                 minArray[i] = Double.MAX_VALUE;
+                if (i == 11 || i == 12 || i == 13 || i == 14 || i == 15) {
+                    maxArray[i] = 1;
+                    minArray[i] = 0;
+                }
             }
             // load all elements in a list,
             List<String[]> list = new CSVReader(new FileReader(filename)).readAll();
@@ -512,9 +516,10 @@ public class StockDataSetIterator implements DataSetIterator {
                         } else {
                             nums[i] = Double.parseDouble(value);
                         }
+                        if (nums[i] > maxArray[i]) maxArray[i] = nums[i];
+                        if (nums[i] < minArray[i]) minArray[i] = nums[i];
                     }
-                    if (nums[i] > maxArray[i]) maxArray[i] = nums[i];
-                    if (nums[i] < minArray[i]) minArray[i] = nums[i];
+
                 }
                 stockDataList.add(new StockData(
                                 arr[0], arr[1], // Currency, Date
@@ -529,6 +534,8 @@ public class StockDataSetIterator implements DataSetIterator {
         } catch (IOException | CsvException e) {
             e.printStackTrace();
         }
+        System.out.print("MaxArray: " + Arrays.toString(maxArray));
+        System.out.println("MinArray: " + Arrays.toString(minArray));
         System.out.println(MessageFormat.format("Finish Reading CSV, Stock Dataset Size {0}", stockDataList.size()));
         return stockDataList;
     }
