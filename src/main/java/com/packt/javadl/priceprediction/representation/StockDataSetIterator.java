@@ -20,6 +20,7 @@ public class StockDataSetIterator implements DataSetIterator {
      * category and its index
      */
     private final Map<PriceCategory, Integer> featureMapIndex = new HashMap<>();
+    private final Map<Integer, PriceCategory> indexMapFeature = new HashMap<>();
 
     // New features size is length of [Open,High,Low,Close,Volume,WAP,Count,Minute,Tesla3,Tesla6,Tesla9,BUY, SELL, NO_Decision, EXECUTE, No_Execute] = 16 feature
     public static final int VECTOR_SIZE = 16; // number of features for a stock data
@@ -61,22 +62,12 @@ public class StockDataSetIterator implements DataSetIterator {
 
     public StockDataSetIterator(String filename, String symbol, int miniBatchSize, int exampleLength, double splitRatio, PriceCategory category) {
 
-        this.featureMapIndex.put(PriceCategory.OPEN, 0);
-        this.featureMapIndex.put(PriceCategory.HIGH, 1);
-        this.featureMapIndex.put(PriceCategory.LOW, 2);
-        this.featureMapIndex.put(PriceCategory.CLOSE, 3);
-        this.featureMapIndex.put(PriceCategory.VOLUME, 4);
-        this.featureMapIndex.put(PriceCategory.WAP, 5);
-        this.featureMapIndex.put(PriceCategory.COUNT, 6);
-        this.featureMapIndex.put(PriceCategory.MINUTE, 7);
-        this.featureMapIndex.put(PriceCategory.TESLA3, 8);
-        this.featureMapIndex.put(PriceCategory.TESLA6, 9);
-        this.featureMapIndex.put(PriceCategory.TESLA9, 10);
-        this.featureMapIndex.put(PriceCategory.BUY, 11);
-        this.featureMapIndex.put(PriceCategory.SELL, 12);
-        this.featureMapIndex.put(PriceCategory.NO_DECISION, 13);
-        this.featureMapIndex.put(PriceCategory.EXECUTE, 14);
-        this.featureMapIndex.put(PriceCategory.NO_EXECUTE, 15);
+        for (PriceCategory priceCategory : PriceCategory.values()) {
+            if (priceCategory != PriceCategory.ALL) {
+                featureMapIndex.put(priceCategory, priceCategory.index);
+                indexMapFeature.put(priceCategory.index, priceCategory);
+            }
+        }
 
         List<StockData> stockDataList = readStockDataFromFile(filename, symbol);
         this.miniBatchSize = miniBatchSize;
@@ -140,120 +131,37 @@ public class StockDataSetIterator implements DataSetIterator {
             StockData nextData;
             for (int i = startIdx; i < endIdx; i++) {
                 int c = i - startIdx;
-                input.putScalar(new int[]{index, 0, c}, (curData.getOpen() - minArray[0]) / (maxArray[0] - minArray[0]));
-                input.putScalar(new int[]{index, 1, c}, (curData.getHigh() - minArray[1]) / (maxArray[1] - minArray[1]));
-                input.putScalar(new int[]{index, 2, c}, (curData.getLow() - minArray[2]) / (maxArray[2] - minArray[2]));
-                input.putScalar(new int[]{index, 3, c}, (curData.getClose() - minArray[3]) / (maxArray[3] - minArray[3]));
-                input.putScalar(new int[]{index, 4, c}, (curData.getVolume() - minArray[4]) / (maxArray[4] - minArray[4]));
-                input.putScalar(new int[]{index, 5, c}, (curData.getWap() - minArray[5]) / (maxArray[5] - minArray[5]));
-                input.putScalar(new int[]{index, 6, c}, (curData.getCount() - minArray[6]) / (maxArray[6] - minArray[6]));
-                input.putScalar(new int[]{index, 7, c}, (curData.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]));
-                input.putScalar(new int[]{index, 8, c}, (curData.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
-                input.putScalar(new int[]{index, 9, c}, (curData.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
-                input.putScalar(new int[]{index, 10, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
 
-                // Features based on Decision column
-                input.putScalar(new int[]{index, 11, c}, (decisionToFeature(PriceCategory.BUY, curData) - minArray[11]) / (maxArray[11] - minArray[11]));
-                input.putScalar(new int[]{index, 12, c}, (decisionToFeature(PriceCategory.SELL, curData) - minArray[12]) / (maxArray[12] - minArray[12]));
-                input.putScalar(new int[]{index, 13, c}, (decisionToFeature(PriceCategory.NO_DECISION, curData) - minArray[13]) / (maxArray[13] - minArray[13]));
+                // Input Features
 
-                // Features based on Execute Column
-                input.putScalar(new int[]{index, 14, c}, (executeToFeature(PriceCategory.EXECUTE, curData) - minArray[14]) / (maxArray[14] - minArray[14]));
-                input.putScalar(new int[]{index, 15, c}, (executeToFeature(PriceCategory.NO_EXECUTE, curData) - minArray[15]) / (maxArray[15] - minArray[15]));
+                for(PriceCategory priceCategory : PriceCategory.values()) {
+                    if (priceCategory != PriceCategory.ALL) {
+                        int featureIdx = featureMapIndex.get(priceCategory);
+                        double value = getNormalizedValue(curData, priceCategory);
+                        input.putScalar(new int[]{index, featureIdx, c}, value);
+                    }
+                }
+
                 nextData = train.get(i + 1);
                 if (category.equals(PriceCategory.ALL)) {
-                    label.putScalar(new int[]{index, 0, c}, (nextData.getOpen() - minArray[1]) / (maxArray[1] - minArray[1]));
-                    label.putScalar(new int[]{index, 1, c}, (nextData.getHigh() - minArray[1]) / (maxArray[1] - minArray[1]));
-                    label.putScalar(new int[]{index, 2, c}, (nextData.getLow() - minArray[2]) / (maxArray[2] - minArray[2]));
-                    label.putScalar(new int[]{index, 3, c}, (nextData.getClose() - minArray[3]) / (maxArray[3] - minArray[3]));
-                    label.putScalar(new int[]{index, 4, c}, (nextData.getVolume() - minArray[4]) / (maxArray[4] - minArray[4]));
-                    label.putScalar(new int[]{index, 5, c}, (nextData.getWap() - minArray[5]) / (maxArray[5] - minArray[5]));
-                    label.putScalar(new int[]{index, 6, c}, (curData.getCount() - minArray[6]) / (maxArray[6] - minArray[6]));
-                    label.putScalar(new int[]{index, 7, c}, (curData.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]));
-                    label.putScalar(new int[]{index, 8, c}, (curData.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
-                    label.putScalar(new int[]{index, 9, c}, (curData.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
-                    label.putScalar(new int[]{index, 10, c}, (curData.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
+                    // Put all the features as labels
 
-                    // Features based on Decision column
-                    label.putScalar(new int[]{index, 11, c}, (decisionToFeature(PriceCategory.BUY, curData) - minArray[11]) / (maxArray[11] - minArray[11]));
-                    label.putScalar(new int[]{index, 12, c}, (decisionToFeature(PriceCategory.SELL, curData) - minArray[12]) / (maxArray[12] - minArray[12]));
-                    label.putScalar(new int[]{index, 13, c}, (decisionToFeature(PriceCategory.NO_DECISION, curData) - minArray[13]) / (maxArray[13] - minArray[13]));
+                    for (PriceCategory priceCategory : PriceCategory.values()) {
+                        if (priceCategory != PriceCategory.ALL) {
+                            int featureIdx = featureMapIndex.get(priceCategory);
+                            double value = getNormalizedValue(nextData, priceCategory);
+                            label.putScalar(new int[]{index, featureIdx, c}, value);
+                        }
+                    }
 
-                    // Features based on Execute Column
-                    label.putScalar(new int[]{index, 14, c}, (executeToFeature(PriceCategory.EXECUTE, curData) - minArray[14]) / (maxArray[14] - minArray[14]));
-                    label.putScalar(new int[]{index, 15, c}, (executeToFeature(PriceCategory.NO_EXECUTE, curData) - minArray[15]) / (maxArray[15] - minArray[15]));
                 } else {
-                    label.putScalar(new int[]{index, 0, c}, feedLabel(nextData));
+                    label.putScalar(new int[]{index, 0, c}, getNormalizedValue(nextData, category));
                 }
                 curData = nextData;
             }
             if (exampleStartOffsets.size() == 0) break;
         }
         return new DataSet(input, label);
-    }
-
-    private double feedLabel(StockData data) {
-        double value;
-        switch (category) {
-            case OPEN:
-                value = (data.getOpen() - minArray[0]) / (maxArray[0] - minArray[0]);
-                break;
-            case HIGH:
-                value = (data.getClose() - minArray[1]) / (maxArray[1] - minArray[1]);
-                break;
-            case LOW:
-                value = (data.getLow() - minArray[2]) / (maxArray[2] - minArray[2]);
-                break;
-            case CLOSE:
-                value = (data.getHigh() - minArray[3]) / (maxArray[3] - minArray[3]);
-                break;
-            case VOLUME:
-                value = (data.getVolume() - minArray[4]) / (maxArray[4] - minArray[4]);
-                break;
-            case WAP:
-                value = (data.getWap() - minArray[5]) / (maxArray[5] - minArray[5]);
-                break;
-            case COUNT:
-                value = (data.getCount() - minArray[6]) / (maxArray[6] - minArray[6]);
-                break;
-            case MINUTE:
-                value = (data.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]);
-                break;
-
-            case TESLA3:
-                value = (data.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]);
-                break;
-            case TESLA6:
-                value = (data.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]);
-                break;
-            case TESLA9:
-                value = (data.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]);
-                break;
-
-            // Added Features based on decision Column
-            case BUY:
-                value = (decisionToFeature(category, data) - minArray[11]) / (maxArray[12] - minArray[12]);
-                break;
-            case SELL:
-                value = (decisionToFeature(category, data) - minArray[12]) / (maxArray[12] - minArray[12]);
-                break;
-            case NO_DECISION:
-                value = (decisionToFeature(category, data) - minArray[13]) / (maxArray[13] - minArray[13]);
-                break;
-
-            // Added Features based on execute Column
-            case EXECUTE:
-                value = (executeToFeature(category, data) - minArray[14]) / (maxArray[14] - minArray[14]);
-                break;
-            case NO_EXECUTE:
-                value = (executeToFeature(category, data) - minArray[15]) / (maxArray[15] - minArray[15]);
-                break;
-
-            // TODO: add category to index to avoid errors missing an index
-            default:
-                throw new NoSuchElementException();
-        }
-        return value;
     }
 
     public int totalExamples() {
@@ -322,26 +230,28 @@ public class StockDataSetIterator implements DataSetIterator {
             for (int j = i; j < i + exampleLength; j++) {
                 StockData stock = stockDataList.get(j);
 
-                input.putScalar(new int[]{j - i, 0}, (stock.getOpen() - minArray[0]) / (maxArray[0] - minArray[0]));
-                input.putScalar(new int[]{j - i, 1}, (stock.getHigh() - minArray[1]) / (maxArray[1] - minArray[1]));
-                input.putScalar(new int[]{j - i, 2}, (stock.getLow() - minArray[2]) / (maxArray[2] - minArray[2]));
-                input.putScalar(new int[]{j - i, 3}, (stock.getClose() - minArray[3]) / (maxArray[3] - minArray[3]));
-                input.putScalar(new int[]{j - i, 4}, (stock.getVolume() - minArray[4]) / (maxArray[4] - minArray[4]));
-                input.putScalar(new int[]{j - i, 5}, (stock.getWap() - minArray[5]) / (maxArray[5] - minArray[5]));
-                input.putScalar(new int[]{j - i, 6}, (stock.getCount() - minArray[6]) / (maxArray[6] - minArray[6]));
-                input.putScalar(new int[]{j - i, 7}, (stock.getMinute() - minArray[7]) / (maxArray[7] - minArray[7]));
-                input.putScalar(new int[]{j - i, 8}, (stock.getTesla3() - minArray[8]) / (maxArray[8] - minArray[8]));
-                input.putScalar(new int[]{j - i, 9}, (stock.getTesla6() - minArray[9]) / (maxArray[9] - minArray[9]));
-                input.putScalar(new int[]{j - i, 10}, (stock.getTesla9() - minArray[10]) / (maxArray[10] - minArray[10]));
+                input.putScalar(new int[]{j - i, 0}, getNormalizedValue(stock, PriceCategory.OPEN));
+                input.putScalar(new int[]{j - i, 1}, getNormalizedValue(stock, PriceCategory.HIGH));
+                input.putScalar(new int[]{j - i, 2}, getNormalizedValue(stock, PriceCategory.LOW));
+                input.putScalar(new int[]{j - i, 3}, getNormalizedValue(stock, PriceCategory.CLOSE));
+                input.putScalar(new int[]{j - i, 4}, getNormalizedValue(stock, PriceCategory.VOLUME));
+
+                input.putScalar(new int[]{j - i, 5}, getNormalizedValue(stock, PriceCategory.WAP));
+                input.putScalar(new int[]{j - i, 6}, getNormalizedValue(stock, PriceCategory.COUNT));
+                input.putScalar(new int[]{j - i, 7}, getNormalizedValue(stock, PriceCategory.MINUTE));
+
+                input.putScalar(new int[]{j - i, 8}, getNormalizedValue(stock, PriceCategory.TESLA3));
+                input.putScalar(new int[]{j - i, 9}, getNormalizedValue(stock, PriceCategory.TESLA6));
+                input.putScalar(new int[]{j - i, 10}, getNormalizedValue(stock, PriceCategory.TESLA9));
 
                 // Features based on Decision column
-                input.putScalar(new int[]{j - i, 11}, (decisionToFeature(PriceCategory.BUY, stock) - minArray[11]) / (maxArray[11] - minArray[11]));
-                input.putScalar(new int[]{j - i, 12}, (decisionToFeature(PriceCategory.SELL, stock) - minArray[12]) / (maxArray[12] - minArray[12]));
-                input.putScalar(new int[]{j - i, 13}, (decisionToFeature(PriceCategory.NO_DECISION, stock) - minArray[13]) / (maxArray[13] - minArray[13]));
+                input.putScalar(new int[]{j - i, 11}, getNormalizedValue(stock, PriceCategory.BUY));
+                input.putScalar(new int[]{j - i, 12}, getNormalizedValue(stock, PriceCategory.SELL));
+                input.putScalar(new int[]{j - i, 13}, getNormalizedValue(stock, PriceCategory.NO_DECISION));
 
                 // Added Features based on execute Column
-                input.putScalar(new int[]{j - i, 14}, (executeToFeature(PriceCategory.EXECUTE, stock) - minArray[14]) / (maxArray[14] - minArray[14]));
-                input.putScalar(new int[]{j - i, 15}, (executeToFeature(PriceCategory.NO_EXECUTE, stock) - minArray[15]) / (maxArray[15] - minArray[15]));
+                input.putScalar(new int[]{j - i, 14}, getNormalizedValue(stock, PriceCategory.EXECUTE));
+                input.putScalar(new int[]{j - i, 15}, getNormalizedValue(stock, PriceCategory.NO_EXECUTE));
             }
 
             StockData stock = stockDataList.get(i + exampleLength);
@@ -424,6 +334,7 @@ public class StockDataSetIterator implements DataSetIterator {
         }
         return test;
     }
+
 
     /**
      * @param filename File Content:
@@ -561,6 +472,54 @@ public class StockDataSetIterator implements DataSetIterator {
         if (priceCategory == PriceCategory.EXECUTE && stock.getExecute() == 1) return 1;
         if (priceCategory == PriceCategory.NO_EXECUTE && stock.getExecute() == 0) return 1;
         return 0;
+    }
+
+
+    public double getNormalizedValue(StockData stock, PriceCategory priceCategory) {
+        int index = this.featureMapIndex.get(priceCategory);
+
+        switch (priceCategory) {
+            case OPEN -> {
+                return (stock.getOpen() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case HIGH -> {
+                return (stock.getHigh() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case LOW -> {
+                return (stock.getLow() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case CLOSE -> {
+                return (stock.getClose() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case VOLUME -> {
+                return (stock.getVolume() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case WAP -> {
+                return (stock.getWap() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case COUNT -> {
+                return (stock.getCount() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case MINUTE -> {
+                return (stock.getMinute() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case TESLA3 -> {
+                return (stock.getTesla3() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case TESLA6 -> {
+                return (stock.getTesla6() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case TESLA9 -> {
+                return (stock.getTesla9() - minArray[this.featureMapIndex.get(priceCategory)] / (maxArray[index] - minArray[index]));
+            }
+            case BUY, NO_DECISION, SELL -> {
+                return decisionToFeature(priceCategory, stock);
+            }
+            case EXECUTE, NO_EXECUTE -> {
+                return executeToFeature(priceCategory, stock);
+            }
+            default -> throw new RuntimeException(MessageFormat.format("Price Category {0} is not defined", priceCategory));
+        }
     }
 }
 

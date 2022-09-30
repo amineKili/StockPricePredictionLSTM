@@ -6,5 +6,27 @@ package com.packt.javadl.priceprediction.representation;
  * @author ZHANG HAO
  */
 public enum PriceCategory {
-    OPEN, CLOSE, LOW, HIGH, VOLUME, WAP, COUNT, MINUTE, TESLA3, TESLA6, TESLA9, BUY, SELL, NO_DECISION, EXECUTE, NO_EXECUTE, ALL
+    OPEN(0),
+    CLOSE(1),
+    LOW(2),
+    HIGH(3),
+    VOLUME(4),
+    WAP(5),
+    COUNT(6),
+    MINUTE(7),
+    TESLA3(8),
+    TESLA6(9),
+    TESLA9(10),
+    BUY(11),
+    SELL(12),
+    NO_DECISION(13),
+    EXECUTE(14),
+    NO_EXECUTE(15),
+    ALL(16);
+
+    public final int index;
+
+    PriceCategory(int index) {
+        this.index = index;
+    }
 }
