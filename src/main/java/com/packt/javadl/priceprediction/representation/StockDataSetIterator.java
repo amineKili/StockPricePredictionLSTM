@@ -2,6 +2,7 @@ package com.packt.javadl.priceprediction.representation;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
+import com.packt.javadl.priceprediction.utils.LoggingUtils;
 import com.packt.javadl.priceprediction.utils.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -12,7 +13,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 @SuppressWarnings("serial")
 public class StockDataSetIterator implements DataSetIterator {
@@ -64,9 +68,11 @@ public class StockDataSetIterator implements DataSetIterator {
         this.exampleLength = exampleLength;
         this.category = category;
         int split = (int) Math.round(stockDataList.size() * splitRatio);
+        LoggingUtils.print(MessageFormat.format("Splitting data at index {0} for training and testing", split));
+
         train = stockDataList.subList(0, split);
-        // TODO : change in case you want to test on different data
         test = generateTestDataSet(stockDataList.subList(split, stockDataList.size()));
+
         initializeOffsets();
     }
 
@@ -125,8 +131,8 @@ public class StockDataSetIterator implements DataSetIterator {
                 int c = i - startIdx;
 
                 // Input Features
-
-                for (PriceCategory priceCategory : PriceCategory.values()) {
+                for (int k = 0; k < VECTOR_SIZE; k++) {
+                    PriceCategory priceCategory = PriceCategory.fromIndex(k);
                     if (priceCategory != PriceCategory.ALL) {
                         double value = getNormalizedValue(curData, priceCategory);
                         input.putScalar(new int[]{index, category.index, c}, value);
@@ -137,7 +143,8 @@ public class StockDataSetIterator implements DataSetIterator {
                 if (category.equals(PriceCategory.ALL)) {
 
                     // Put all the features as labels
-                    for (PriceCategory priceCategory : PriceCategory.values()) {
+                    for (int k = 0; k < VECTOR_SIZE; k++) {
+                        PriceCategory priceCategory = PriceCategory.fromIndex(k);
                         if (priceCategory != PriceCategory.ALL) {
                             double value = getNormalizedValue(nextData, priceCategory);
                             label.putScalar(new int[]{index, category.index, c}, value);
@@ -213,7 +220,7 @@ public class StockDataSetIterator implements DataSetIterator {
     }
 
     // Input should be normalized
-    // Label should not be normalized
+    // Label should not be normalized => Used directly for comparison
     private List<Pair<INDArray, INDArray>> generateTestDataSet(List<StockData> stockDataList) {
         int window = exampleLength + predictLength;
         List<Pair<INDArray, INDArray>> test = new ArrayList<>();
@@ -221,8 +228,8 @@ public class StockDataSetIterator implements DataSetIterator {
             INDArray input = Nd4j.create(new int[]{exampleLength, VECTOR_SIZE}, 'f');
             for (int j = i; j < i + exampleLength; j++) {
                 StockData stock = stockDataList.get(j);
-
-                for (PriceCategory priceCategory : PriceCategory.values()) {
+                for (int k = 0; k < VECTOR_SIZE; k++) {
+                    PriceCategory priceCategory = PriceCategory.fromIndex(k);
                     if (priceCategory != PriceCategory.ALL) {
                         double value = getNormalizedValue(stock, priceCategory);
                         input.putScalar(new int[]{j - i, category.index}, value);
@@ -232,10 +239,10 @@ public class StockDataSetIterator implements DataSetIterator {
 
             StockData stock = stockDataList.get(i + exampleLength);
             INDArray label;
-
             if (category.equals(PriceCategory.ALL)) {
                 label = Nd4j.create(new int[]{VECTOR_SIZE}, 'f'); // ordering is set as 'f', faster construct
-                for (PriceCategory priceCategory : PriceCategory.values()) {
+                for (int k = 0; k < VECTOR_SIZE; k++) {
+                    PriceCategory priceCategory = PriceCategory.fromIndex(k);
                     if (priceCategory != PriceCategory.ALL) {
                         double value = getOrdinaryValue(stock, priceCategory);
                         label.putScalar(new int[]{category.index}, value);
@@ -357,8 +364,6 @@ public class StockDataSetIterator implements DataSetIterator {
         } catch (IOException | CsvException e) {
             e.printStackTrace();
         }
-        System.out.print("MaxArray: " + Arrays.toString(maxArray));
-        System.out.println("MinArray: " + Arrays.toString(minArray));
         System.out.println(MessageFormat.format("Finish Reading CSV, Stock Dataset Size {0}", stockDataList.size()));
         return stockDataList;
     }
