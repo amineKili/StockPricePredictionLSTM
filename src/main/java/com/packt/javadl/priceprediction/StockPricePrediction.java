@@ -10,16 +10,19 @@ import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
 
 public class StockPricePrediction {
-    private static final int exampleLength = 1096; // time series length, assume 22 working days per month
+    private static final int exampleLength = 30; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
@@ -28,7 +31,7 @@ public class StockPricePrediction {
 
         String symbol = "AUD"; // stock name
 
-        int batchSize = 512; // mini-batch size
+        int batchSize = 128; // mini-batch size
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
@@ -52,7 +55,8 @@ public class StockPricePrediction {
         //Then add the StatsListener to collect this information from the network, as it trains
 
         int listenerFrequency = 1;
-        net.setListeners(new ScoreIterationListener(listenerFrequency));
+        net.setListeners(new ScoreIterationListener(listenerFrequency), new PerformanceListener(listenerFrequency));
+
 
         LoggingUtils.print("Training LSTM network...");
         for (int i = 0; i < epochs; i++) {
@@ -73,18 +77,18 @@ public class StockPricePrediction {
         LoggingUtils.print("Total number of network parameters: " + totalNumParams_before_saving);
 
         //  TODO: uncomment this to save the model
-        //  LoggingUtils.print("Saving model...");
-        //  File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
-        //
-        //  saveUpdater: i.e., the state for Momentum, RMSProp, Adagrad etc. Save this to train your network more in the future
-        //  ModelSerializer.writeModel(net, locationToSave, true);
-        //
-        //  LoggingUtils.print("Restoring model...");
-        //  net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
-        //
-        //  LoggingUtils.print the score with every 1 iteration
-        //  net.setListeners(new ScoreIterationListener(listenerFrequency));
-
+//          LoggingUtils.print("Saving model...");
+//          File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
+//
+////          saveUpdater: i.e., the state for Momentum, RMSProp, Adagrad etc. Save this to train your network more in the future
+//          ModelSerializer.writeModel(net, locationToSave, true);
+//
+//          LoggingUtils.print("Restoring model...");
+//          net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
+//
+////          LoggingUtils.print the score with every 1 iteration
+//          net.setListeners(new ScoreIterationListener(listenerFrequency));
+////
         //  LoggingUtils.print the  number of parameters in the network (and for each layer)
 
         Layer[] layers = net.getLayers();
@@ -128,10 +132,9 @@ public class StockPricePrediction {
         ROCMultiClass eval = net.evaluateROCMultiClass(iterator);
         LoggingUtils.print(eval.stats());
 
-        LoggingUtils.print("LoggingUtils.printing predicted and actual values...");
+        LoggingUtils.print("Predicted and actual values...");
         LoggingUtils.print("Predict, Actual");
 
-        // TODO: Uncomment this section if needs to read Actual/Predicted Values
         for (int i = 0; i < predicts.length; i++)
             LoggingUtils.print(predicts[i] + "," + actuals[i]);
 
@@ -165,7 +168,7 @@ public class StockPricePrediction {
             }
             String name;
             name = PriceCategory.fromIndex(n).name();
-            LoggingUtils.print("LoggingUtils.printing predicted and actual values...");
+            LoggingUtils.print("Predicted and actual values...");
             LoggingUtils.print("Predict, Actual");
             for (int i = 0; i < pred.length; i++)
                 LoggingUtils.print(pred[i] + "," + actu[i]);
