@@ -7,9 +7,9 @@ package com.packt.javadl.priceprediction.representation;
  */
 public enum PriceCategory {
     OPEN(0),
-    CLOSE(1),
+    HIGH(1),
     LOW(2),
-    HIGH(3),
+    CLOSE(3),
     VOLUME(4),
     WAP(5),
     COUNT(6),

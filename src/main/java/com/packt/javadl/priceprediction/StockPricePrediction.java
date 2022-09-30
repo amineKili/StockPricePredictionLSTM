@@ -39,7 +39,7 @@ public class StockPricePrediction {
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 100; // training epochs
+        int epochs = 15; // training epochs
 
         print("Creating dataSet iterator...");
 
