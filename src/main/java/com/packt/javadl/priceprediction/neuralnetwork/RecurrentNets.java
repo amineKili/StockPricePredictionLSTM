@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -15,20 +16,70 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class RecurrentNets {
-    private static final int lstmLayer1Size = 128;
-    private static final int lstmLayer2Size = 128;
-    private static final int denseLayerSize = 32;
-    private static final double dropoutRatio = 0.5;
+    private static final int lstmLayer1Size = 256;
+    private static final int lstmLayer2Size = 256;
+    private static final int denseLayerSize = 64;
+    private static final double dropoutRatio = 0.1;
     private static final int truncatedBPTTLength = 22;
 
     public static MultiLayerNetwork fullLstmNetwork(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123456)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Adam(0.001))
+                .updater(new Adam(0.01))
                 .l2(1e-4)
                 .weightInit(WeightInit.XAVIER)
-                .activation(Activation.RELU)
+                .list()
+                .layer(0, new GravesLSTM.Builder()
+                        .nIn(nIn)
+                        .nOut(lstmLayer1Size)
+                        .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
+                        .dropOut(dropoutRatio)
+                        .build())
+                .layer(1, new GravesLSTM.Builder()
+                        .nIn(lstmLayer1Size)
+                        .nOut(lstmLayer2Size)
+                        .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
+                        .dropOut(dropoutRatio)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nIn(lstmLayer2Size)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(3, new RnnOutputLayer.Builder()
+                        .nIn(denseLayerSize)
+                        .nOut(nOut)
+                        .activation(Activation.IDENTITY)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build())
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTForwardLength(truncatedBPTTLength)
+                .tBPTTBackwardLength(truncatedBPTTLength)
+                .pretrain(false)
+                .backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setListeners(new ScoreIterationListener(1));
+        return net;
+    }
+
+    private static final int nnlayerSize = 128;
+    private static final int nnlayer1Size = 1000;
+    private static final int nnlayer2Size = 128;
+
+    public static MultiLayerNetwork neuralNetwork(int nIn, int nOut) {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123456)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Adam(1))
+                .l2(1e-4)
+                .weightInit(WeightInit.XAVIER)
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new LSTM.Builder()
                         .nIn(nIn)
@@ -45,7 +96,7 @@ public class RecurrentNets {
                         .dropOut(dropoutRatio)
                         .build())
                 .layer(2, new LSTM.Builder()
-                        .nIn(lstmLayer1Size)
+                        .nIn(lstmLayer2Size)
                         .nOut(lstmLayer2Size)
                         .activation(Activation.TANH)
                         .gateActivationFunction(Activation.HARDSIGMOID)
@@ -69,8 +120,8 @@ public class RecurrentNets {
                 .layer(6, new RnnOutputLayer.Builder()
                         .nIn(denseLayerSize)
                         .nOut(nOut)
-                        .activation(Activation.IDENTITY)
-                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                         .build())
                 .backpropType(BackpropType.TruncatedBPTT)
                 .tBPTTForwardLength(truncatedBPTTLength)
@@ -81,7 +132,7 @@ public class RecurrentNets {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(new ScoreIterationListener(100));
+        net.setListeners(new ScoreIterationListener(1));
         return net;
     }
 
@@ -128,9 +179,9 @@ public class RecurrentNets {
                         .activation(Activation.IDENTITY)
                         .lossFunction(LossFunctions.LossFunction.MSE)
                         .build())
-                .backpropType(BackpropType.TruncatedBPTT)
-                .tBPTTForwardLength(truncatedBPTTLength)
-                .tBPTTBackwardLength(truncatedBPTTLength)
+//                .backpropType(BackpropType.TruncatedBPTT)
+//                .tBPTTForwardLength(truncatedBPTTLength)
+//                .tBPTTBackwardLength(truncatedBPTTLength)
                 .pretrain(false)
                 .backprop(true)
                 .build();

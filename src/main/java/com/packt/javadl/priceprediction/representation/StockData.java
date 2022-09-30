@@ -1,10 +1,8 @@
 package com.packt.javadl.priceprediction.representation;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class StockData {
 
     private String date;
@@ -29,4 +27,23 @@ public class StockData {
 
     private double execute;
 
+
+    public StockData(String date, String symbol, double open, double high, double low, double close, double volume, double wap, double count, double minute, double tesla3, double tesla6, double tesla9, double buy, double sell, double execute) {
+        this.date = date;
+        this.symbol = symbol;
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
+        this.volume = volume;
+        this.wap = wap;
+        this.count = count;
+        this.minute = minute;
+        this.tesla3 = tesla3;
+        this.tesla6 = tesla6;
+        this.tesla9 = tesla9;
+        this.buy = buy;
+        this.sell = sell;
+        this.execute = execute;
+    }
 }

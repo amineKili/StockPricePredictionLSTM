@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public class StockPricePrediction {
-    private static final int exampleLength = 300; // time series length, assume 22 working days per month
+    private static final int exampleLength = 30; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
@@ -34,17 +34,17 @@ public class StockPricePrediction {
 
         String symbol = "AUD"; // stock name
 
-        int batchSize = 1096; // mini-batch size
+        int batchSize = 100; // mini-batch size
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 100; // training epochs
+        int epochs = 10; // training epochs
 
         print("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.ALL;
+        PriceCategory category = PriceCategory.CLOSE;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         print("Loading test dataset...");
@@ -62,7 +62,7 @@ public class StockPricePrediction {
         net.setListeners(new StatsListener(statsStorage, listenerFrequency));
 
         //Print Training Score
-        net.addListeners(new ScoreIterationListener(1));
+        net.addListeners(new ScoreIterationListener(100));
 
         print("Training LSTM network...");
         for (int i = 0; i < epochs; i++) {
