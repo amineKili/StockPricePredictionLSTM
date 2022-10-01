@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -19,39 +18,60 @@ public class RecurrentNets {
     private static final int lstmLayer1Size = 128;
     private static final int lstmLayer2Size = 256;
     private static final int denseLayerSize = 64;
-    private static final double dropoutRatio = 0.1;
+    private static final double dropoutRatio = 0.5;
     private static final int truncatedBPTTLength = 22;
+    private static final int seed = 12345;
+    private static final double learningRate = 0.05;
 
     public static MultiLayerNetwork fullLstmNetwork(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(123456)
+                .seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Adam(0.5))
+                .updater(new Adam(learningRate))
                 .l2(1e-4)
                 .weightInit(WeightInit.XAVIER)
+                .activation(Activation.RELU)
                 .list()
-                .layer(0, new GravesLSTM.Builder()
+                .layer(0, new LSTM.Builder()
                         .nIn(nIn)
                         .nOut(lstmLayer1Size)
                         .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
                         .dropOut(dropoutRatio)
                         .build())
-                .layer(1, new GravesLSTM.Builder()
+                .layer(1, new LSTM.Builder()
                         .nIn(lstmLayer1Size)
                         .nOut(lstmLayer2Size)
                         .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
                         .dropOut(dropoutRatio)
                         .build())
-                .layer(2, new GravesLSTM.Builder()
+                .layer(2, new LSTM.Builder()
                         .nIn(lstmLayer2Size)
                         .nOut(lstmLayer2Size)
                         .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.HARDSIGMOID)
                         .dropOut(dropoutRatio)
                         .build())
-                .layer(3, new RnnOutputLayer.Builder()
+                .layer(3, new DenseLayer.Builder()
                         .nIn(lstmLayer2Size)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(4, new DenseLayer.Builder()
+                        .nIn(denseLayerSize)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(5, new DenseLayer.Builder()
+                        .nIn(denseLayerSize)
+                        .nOut(denseLayerSize)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(6, new RnnOutputLayer.Builder()
+                        .nIn(denseLayerSize)
                         .nOut(nOut)
-                        .activation(Activation.SIGMOID)
+                        .activation(Activation.IDENTITY)
                         .lossFunction(LossFunctions.LossFunction.MSE)
                         .build())
                 .backpropType(BackpropType.TruncatedBPTT)
@@ -106,7 +126,7 @@ public class RecurrentNets {
                 .layer(4, new RnnOutputLayer.Builder()
                         .nIn(denseLayerSize)
                         .nOut(nOut)
-                        .activation(Activation.IDENTITY)
+                        .activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.MSE)
                         .build())
                 .pretrain(false)

@@ -6,7 +6,6 @@ import com.packt.javadl.priceprediction.representation.StockDataSetIterator;
 import com.packt.javadl.priceprediction.utils.LoggingUtils;
 import com.packt.javadl.priceprediction.utils.Pair;
 import com.packt.javadl.priceprediction.utils.PlotUtil;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -36,12 +35,12 @@ public class StockPricePrediction {
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 5; // training epochs
+        int epochs = 3; // training epochs
 
         LoggingUtils.print("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.CLOSE;
+        PriceCategory category = PriceCategory.EXECUTE;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         LoggingUtils.print("Loading test dataset...");
@@ -76,20 +75,14 @@ public class StockPricePrediction {
         }
         LoggingUtils.print("Total number of network parameters: " + totalNumParams_before_saving);
 
-        //  TODO: uncomment this to save the model
-//          LoggingUtils.print("Saving model...");
-//          File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
-//
-////          saveUpdater: i.e., the state for Momentum, RMSProp, Adagrad etc. Save this to train your network more in the future
-//          ModelSerializer.writeModel(net, locationToSave, true);
-//
-//          LoggingUtils.print("Restoring model...");
-//          net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
-//
-////          LoggingUtils.print the score with every 1 iteration
-//          net.setListeners(new ScoreIterationListener(listenerFrequency));
-////
-        //  LoggingUtils.print the  number of parameters in the network (and for each layer)
+        LoggingUtils.print("Saving model...");
+        File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
+        ModelSerializer.writeModel(net, locationToSave, true);
+
+        LoggingUtils.print("Restoring model...");
+        net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
+
+        net.setListeners(new ScoreIterationListener(listenerFrequency));
 
         Layer[] layers = net.getLayers();
         int totalNumParams = 0;
@@ -127,9 +120,12 @@ public class StockPricePrediction {
             // Change this to get more than one step ahead
             predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getDouble(exampleLength - 1) * (max - min) + min;
             actuals[i] = testData.get(i).getValue().getDouble(0);
+
+            // Fit model using last step of the sequence only
+            net.fit(testData.get(i).getKey(), testData.get(i).getValue());
         }
 
-        ROCMultiClass eval = net.evaluateROCMultiClass(iterator);
+        RegressionEvaluation eval = net.evaluateRegression(iterator);
         LoggingUtils.print(eval.stats());
 
         LoggingUtils.print("Predicted and actual values...");
@@ -165,9 +161,10 @@ public class StockPricePrediction {
             for (int i = 0; i < predicts.length; i++) {
                 pred[i] = predicts[i].getDouble(n);
                 actu[i] = actuals[i].getDouble(n);
+
             }
             String name;
-            name = PriceCategory.fromIndex(n).name();
+            name = PriceCategory.fromFeatureIndex(n).name();
             LoggingUtils.print("Predicted and actual values...");
             LoggingUtils.print("Predict, Actual");
             for (int i = 0; i < pred.length; i++)
