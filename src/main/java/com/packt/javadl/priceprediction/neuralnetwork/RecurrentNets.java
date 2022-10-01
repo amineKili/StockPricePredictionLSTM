@@ -16,12 +16,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class RecurrentNets {
     private static final int lstmLayer1Size = 128;
-    private static final int lstmLayer2Size = 256;
+    private static final int lstmLayer2Size = 128;
     private static final int denseLayerSize = 64;
     private static final double dropoutRatio = 0.5;
     private static final int truncatedBPTTLength = 22;
     private static final int seed = 12345;
-    private static final double learningRate = 0.05;
+    private static final double learningRate = 0.1;
 
     public static MultiLayerNetwork fullLstmNetwork(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

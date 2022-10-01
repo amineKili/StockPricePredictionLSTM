@@ -21,7 +21,7 @@ import java.text.MessageFormat;
 import java.util.List;
 
 public class StockPricePrediction {
-    private static final int exampleLength = 30; // time series length, assume 22 working days per month
+    private static final int exampleLength = 120; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
@@ -30,17 +30,17 @@ public class StockPricePrediction {
 
         String symbol = "AUD"; // stock name
 
-        int batchSize = 128; // mini-batch size
+        int batchSize = 1096; // mini-batch size
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 3; // training epochs
+        int epochs = 5; // training epochs
 
         LoggingUtils.print("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.EXECUTE;
+        PriceCategory category = PriceCategory.CLOSE;
 
         iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         LoggingUtils.print("Loading test dataset...");
@@ -123,6 +123,8 @@ public class StockPricePrediction {
 
             // Fit model using last step of the sequence only
             net.fit(testData.get(i).getKey(), testData.get(i).getValue());
+
+//            net.updateRnnStateWithTBPTTState();
         }
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
@@ -150,6 +152,7 @@ public class StockPricePrediction {
         for (int i = 0; i < testData.size(); i++) {
             predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1).mul(max.sub(min)).add(min);
             actuals[i] = testData.get(i).getValue();
+            net.fit(testData.get(i).getKey(), testData.get(i).getValue());
         }
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);
@@ -161,7 +164,6 @@ public class StockPricePrediction {
             for (int i = 0; i < predicts.length; i++) {
                 pred[i] = predicts[i].getDouble(n);
                 actu[i] = actuals[i].getDouble(n);
-
             }
             String name;
             name = PriceCategory.fromFeatureIndex(n).name();
