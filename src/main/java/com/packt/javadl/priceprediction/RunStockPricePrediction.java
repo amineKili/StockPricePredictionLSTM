@@ -20,29 +20,29 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
 
-public class StockPricePrediction {
-    private static final int exampleLength = 120; // time series length, assume 22 working days per month
+public class RunStockPricePrediction {
+    private static final int exampleLength = 22; // time series length, assume 22 working days per month
     private static StockDataSetIterator iterator;
 
     public static void main(String[] args) throws IOException {
 
-        String file = "/Users/amine/Downloads/B010335_07_Codes/StockPricePrediction/data/AUD.csv";
+        String filePath = "data/AUD.csv";
 
         String symbol = "AUD"; // stock name
 
-        int batchSize = 1096; // mini-batch size
+        int batchSize = 128; // mini-batch size
 
         double splitRatio = 0.8; // 80% for training, 20% for testing
 
         // TODO : Increase to 100 in production
-        int epochs = 5; // training epochs
+        int epochs = 100; // training epochs
 
         LoggingUtils.print("Creating dataSet iterator...");
 
         //Change to ALL for LSTM to generate All fields or Use a specific Field
-        PriceCategory category = PriceCategory.CLOSE;
+        PriceCategory outputCategory = PriceCategory.BUY;
 
-        iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
+        iterator = new StockDataSetIterator(filePath, symbol, batchSize, exampleLength, splitRatio, outputCategory);
         LoggingUtils.print("Loading test dataset...");
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
 
@@ -56,28 +56,7 @@ public class StockPricePrediction {
         int listenerFrequency = 1;
         net.setListeners(new ScoreIterationListener(listenerFrequency), new PerformanceListener(listenerFrequency));
 
-
-        LoggingUtils.print("Training LSTM network...");
-        for (int i = 0; i < epochs; i++) {
-            LoggingUtils.print("Epoch " + i);
-            while (iterator.hasNext()) net.fit(iterator.next()); // fit model using mini-batch data
-            iterator.reset(); // reset iterator
-            net.rnnClearPreviousState(); // clear previous state
-        }
-
-        //LoggingUtils.print the  number of parameters in the network (and for each layer)
-        Layer[] layers_before_saving = net.getLayers();
-        int totalNumParams_before_saving = 0;
-        for (int i = 0; i < layers_before_saving.length; i++) {
-            int nParams = layers_before_saving[i].numParams();
-            LoggingUtils.print("Number of parameters in layer " + i + ": " + nParams);
-            totalNumParams_before_saving += nParams;
-        }
-        LoggingUtils.print("Total number of network parameters: " + totalNumParams_before_saving);
-
-        LoggingUtils.print("Saving model...");
-        File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
-        ModelSerializer.writeModel(net, locationToSave, true);
+        File locationToSave = new File("data/StockPriceLSTM_".concat(String.valueOf(outputCategory)).concat(".zip"));
 
         LoggingUtils.print("Restoring model...");
         net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
@@ -94,14 +73,14 @@ public class StockPricePrediction {
         LoggingUtils.print("Total number of network parameters: " + totalNumParams);
 
         LoggingUtils.print("Evaluating...");
-        if (category.equals(PriceCategory.ALL)) {
+        if (outputCategory.equals(PriceCategory.ALL)) {
             INDArray max = Nd4j.create(iterator.getMaxArray());
             INDArray min = Nd4j.create(iterator.getMinArray());
             predictAllCategories(net, test, max, min);
         } else {
-            double max = iterator.getMaxNum(category);
-            double min = iterator.getMinNum(category);
-            predictPriceOneAhead(net, test, max, min, category);
+            double max = iterator.getMaxNum(outputCategory);
+            double min = iterator.getMinNum(outputCategory);
+            predictPriceOneAhead(net, test, max, min, outputCategory);
         }
         LoggingUtils.print("Done...");
     }
@@ -123,8 +102,6 @@ public class StockPricePrediction {
 
             // Fit model using last step of the sequence only
             net.fit(testData.get(i).getKey(), testData.get(i).getValue());
-
-//            net.updateRnnStateWithTBPTTState();
         }
 
         RegressionEvaluation eval = net.evaluateRegression(iterator);

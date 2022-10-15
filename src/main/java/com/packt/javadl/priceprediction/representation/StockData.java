@@ -27,7 +27,6 @@ public class StockData {
 
     private double execute;
 
-
     public StockData(String symbol, String date, double open, double high, double low, double close, double volume, double wap, double count, double minute, double tesla3, double tesla6, double tesla9, double buy, double sell, double execute) {
         this.date = date;
         this.symbol = symbol;

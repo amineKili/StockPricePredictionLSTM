@@ -15,10 +15,10 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class RecurrentNets {
-    private static final int lstmLayer1Size = 128;
-    private static final int lstmLayer2Size = 128;
-    private static final int denseLayerSize = 64;
-    private static final double dropoutRatio = 0.5;
+    private static final int lstmLayer1Size = 256;
+    private static final int lstmLayer2Size = 256;
+    private static final int denseLayerSize = 128;
+    private static final double dropoutRatio = 0.05;
     private static final int truncatedBPTTLength = 22;
     private static final int seed = 12345;
     private static final double learningRate = 0.1;
@@ -30,7 +30,7 @@ public class RecurrentNets {
                 .updater(new Adam(learningRate))
                 .l2(1e-4)
                 .weightInit(WeightInit.XAVIER)
-                .activation(Activation.RELU)
+                .activation(Activation.IDENTITY)
                 .list()
                 .layer(0, new LSTM.Builder()
                         .nIn(nIn)
@@ -97,7 +97,7 @@ public class RecurrentNets {
                 .updater(new Adam(0.001))
                 .l2(1e-4)
                 .weightInit(WeightInit.XAVIER)
-                .activation(Activation.RELU)
+                .activation(Activation.IDENTITY)
                 .list()
                 .layer(0, new LSTM.Builder()
                         .nIn(nIn)
